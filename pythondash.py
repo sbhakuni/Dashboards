@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu May 28 23:55:02 2020
-
-@author: bhaku
-"""
-
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -13,13 +6,13 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 import yfinance as yf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
-from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
+# from tensorflow.keras.models import Sequential
+# from tensorflow.keras.layers import LSTM, Dense, Dropout
+# from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-from yahoo_fin import stock_info as si
+#from yahoo_fin import stock_info as si
 from collections import deque
 import numpy as np
 import matplotlib.pyplot as plt
@@ -194,35 +187,35 @@ def update_graph1(n_clicks, stock_ticker, lookforward_period,risk):
     if lookforward_period==2:
         exp_ret=pypfopt.expected_returns.mean_historical_return(data4, frequency=500)
         if (risk==2):
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1), gamma=1)
+            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1) )
             weights_ef=ef.max_sharpe(risk_free_rate=0.02)
         elif (risk==3):
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1), gamma=1)
+            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1) )
             weights_ef=ef.max_quadratic_utility(risk_aversion=0.00001, market_neutral=False)
         else:
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1), gamma=1)
+            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1) )
             weights_ef=ef.min_volatility()
     elif (lookforward_period==3):
         exp_ret=pypfopt.expected_returns.mean_historical_return(data4, frequency=750)
         if (risk==2):
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1), gamma=1)
+            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1), )
             weights_ef=ef.max_sharpe(risk_free_rate=0.02)
         elif (risk==3):
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1), gamma=1)
+            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1))
             weights_ef=ef.max_quadratic_utility(risk_aversion=0.00001, market_neutral=False)
         else:
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1), gamma=1)
+            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1))
             weights_ef=ef.min_volatility()
     else:
         exp_ret=pypfopt.expected_returns.mean_historical_return(data4, frequency=250)
         if (risk==2):
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1), gamma=1)
+            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1))
             weights_ef=ef.max_sharpe(risk_free_rate=0.02)
         elif (risk==3):
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1), gamma=1)
+            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1))
             weights_ef=ef.max_quadratic_utility(risk_aversion=0.00001, market_neutral=False)
         else:
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1), gamma=1)
+            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1))
             weights_ef=ef.min_volatility()
         #exp_ret=pypfopt.expected_returns.mean_historical_return(data4, frequency=250)
     
@@ -231,13 +224,13 @@ def update_graph1(n_clicks, stock_ticker, lookforward_period,risk):
     
     
     if (risk==2):
-        ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1), gamma=1)
+        ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1))
         weights_ef=ef.max_sharpe(risk_free_rate=0.02)
     elif (risk==3):
-        ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1), gamma=1)
+        ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1))
         weights_ef=ef.max_quadratic_utility(risk_aversion=0.00001, market_neutral=False)
     else:
-        ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1), gamma=1)
+        ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1))
         weights_ef=ef.min_volatility()
     
     dictlist=[]
@@ -269,4 +262,3 @@ def update_graph1(n_clicks, stock_ticker, lookforward_period,risk):
 
 if __name__ == '__main__':
     app.run_server()
-    
