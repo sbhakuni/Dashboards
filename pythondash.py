@@ -6,29 +6,11 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 import yfinance as yf
-# from tensorflow.keras.models import Sequential
-# from tensorflow.keras.layers import LSTM, Dense, Dropout
-# from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
-from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
-#from yahoo_fin import stock_info as si
-from collections import deque
-import numpy as np
-import matplotlib.pyplot as plt
-import random
-import time
-import os
 import pypfopt
 from pypfopt import EfficientFrontier
 from pypfopt import risk_models
-from pypfopt import expected_returns
-from pypfopt import BlackLittermanModel
-import plotly.tools as tls
-
-#import pandas_datareader.data as web # requires v0.6.0 or later
-from datetime import datetime
 import pandas as pd
+
 resp = requests.get('http://en.wikipedia.org/wiki/List_of_S%26P_500_companies')
 soup = BeautifulSoup(resp.text, 'lxml')
 table=soup.find('table',{'class':'wikitable sortable'})
@@ -39,19 +21,17 @@ gics_sub_industries=[]
 
 options = []
 
-#for tic,name in tickers,securities:
-#    options.append({'label':'{} {}'.format(tic,name), 'value':tic})
 
 for row in table.findAll('tr')[1:]:
-        ticker = row.findAll('td')[0].text
-        security = row.findAll('td')[1].text
-        gics_industry = row.findAll('td')[3].text
-        gics_sub_industry = row.findAll('td')[4].text
+    ticker = row.findAll('td')[0].text
+    security = row.findAll('td')[1].text
+    gics_industry = row.findAll('td')[3].text
+    gics_sub_industry = row.findAll('td')[4].text
 
-        tickers.append(ticker.lower().replace(r"\n", " "))
-        securities.append(security)
-        gics_industries.append(gics_industry.lower())
-        gics_sub_industries.append(gics_sub_industry.lower())
+    tickers.append(ticker.lower().replace(r"\n", " "))
+    securities.append(security)
+    gics_industries.append(gics_industry.lower())
+    gics_sub_industries.append(gics_sub_industry.lower())
         
 df = list(zip(tickers,securities))
 df=pd.DataFrame(df, columns=['tickers','securities'])
@@ -147,17 +127,13 @@ def update_graph(n_clicks, stock_ticker, lookforward_period,risk):
     data1=data1.dropna(axis='columns',how="any")
     traces = []
     for tic in stock_ticker:
-#        df = web.DataReader(tic,'iex',start,end)
         traces.append({'x':data1.index, 'y': data1[f"{tic}"], 'name':tic})
 
     fig = {
-        # set data equal to traces
         'data': traces,
-        # use string formatting to include all symbols in the chart title
         'layout': {'title':', '.join(stock_ticker)+' Closing Prices for past 5 years'}
     }
     return fig
-
 
 
 @app.callback(
@@ -183,62 +159,33 @@ def update_graph1(n_clicks, stock_ticker, lookforward_period,risk):
         cumulative_ret_data[f"{contents}"] = (1+(data4[f"{contents}"]).pct_change()).cumprod() 
     cumulative_ret_data=cumulative_ret_data.fillna(1)
     S = risk_models.sample_cov(data4)
-    
-    if lookforward_period==2:
-        exp_ret=pypfopt.expected_returns.mean_historical_return(data4, frequency=500)
-        if (risk==2):
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1) )
-            weights_ef=ef.max_sharpe(risk_free_rate=0.02)
-        elif (risk==3):
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1) )
-            weights_ef=ef.max_quadratic_utility(risk_aversion=0.00001, market_neutral=False)
-        else:
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1) )
-            weights_ef=ef.min_volatility()
-    elif (lookforward_period==3):
-        exp_ret=pypfopt.expected_returns.mean_historical_return(data4, frequency=750)
-        if (risk==2):
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1), )
-            weights_ef=ef.max_sharpe(risk_free_rate=0.02)
-        elif (risk==3):
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1))
-            weights_ef=ef.max_quadratic_utility(risk_aversion=0.00001, market_neutral=False)
-        else:
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1))
-            weights_ef=ef.min_volatility()
+
+    # Portfolio optimization based on lookforward period and risk preference
+    if lookforward_period == 2:
+        frequency = 500
+    elif lookforward_period == 3:
+        frequency = 750
     else:
-        exp_ret=pypfopt.expected_returns.mean_historical_return(data4, frequency=250)
-        if (risk==2):
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1))
-            weights_ef=ef.max_sharpe(risk_free_rate=0.02)
-        elif (risk==3):
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1))
-            weights_ef=ef.max_quadratic_utility(risk_aversion=0.00001, market_neutral=False)
-        else:
-            ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1))
-            weights_ef=ef.min_volatility()
-        #exp_ret=pypfopt.expected_returns.mean_historical_return(data4, frequency=250)
-    
-    #exp_ret=pypfopt.expected_returns.mean_historical_return(data4, frequency=252) 
-    
-    
-    
-    if (risk==2):
-        ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1))
-        weights_ef=ef.max_sharpe(risk_free_rate=0.02)
-    elif (risk==3):
-        ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1))
-        weights_ef=ef.max_quadratic_utility(risk_aversion=0.00001, market_neutral=False)
+        frequency = 250  # Default frequency for other cases
+
+    # Calculate expected returns with the specified frequency
+    exp_ret = pypfopt.expected_returns.mean_historical_return(data4, frequency=frequency)
+
+    # Initialize Efficient Frontier with the expected returns and a given covariance matrix
+    ef = EfficientFrontier(exp_ret, S, weight_bounds=(-1, 1))
+
+    # Optimize portfolio based on risk preference
+    if risk == 2:
+        weights_ef = ef.max_sharpe(risk_free_rate=0.02)
+    elif risk == 3:
+        weights_ef = ef.max_quadratic_utility(risk_aversion=0.00001, market_neutral=False)
     else:
-        ef = EfficientFrontier(exp_ret, S,weight_bounds=(-1, 1))
-        weights_ef=ef.min_volatility()
-    
+        weights_ef = ef.min_volatility()
+        
     dictlist=[]
     for key, value in weights_ef.items():
         temp = [key,value]
         dictlist.append(temp)
-    
-
             
     weights=pd.DataFrame(dictlist,columns=['ticker','weight']).set_index('ticker') 
     weights=weights.iloc[:,0]
